@@ -22,6 +22,8 @@ func main() {
 	conn, _ := net.Dial("tcp", "127.0.0.1:8083")
   SetupCloseHandler(conn)
 
+  generateUuid()
+
 	fmt.Println("Starting Client")
 
   // read in input from stdin
