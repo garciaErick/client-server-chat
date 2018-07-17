@@ -10,6 +10,7 @@ import (
   "syscall"
 )
 
+var clients_MAP = make(map[int]clients_table)
 
 func main() {
 
@@ -19,9 +20,11 @@ func main() {
   ln, _ := net.Listen("tcp", ":8085")
 
   SetupCloseHandlerServer(ln)
-  for {
 
-    fmt.Println("Ready to receive")
+  fmt.Println("Ready to receive connections")
+  fmt.Println()
+
+  for {
 
     // run loop forever (or until ctrl-c)
     conn, err := ln.Accept()
@@ -31,19 +34,27 @@ func main() {
       os.Exit(2)
     }
 
-
     go handleConnection(conn)
-
-
-    fmt.Println("Closing Connection")
-
   }
 }
 
 func handleConnection(conn net.Conn){
-  name, _ := bufio.NewReader(conn).ReadString('\n')
-  name = strings.TrimRight(name, "\n")
-  fmt.Println(name + " has logged in")
+  username, _ := bufio.NewReader(conn).ReadString('\n')
+  username = strings.TrimRight(username, "\n")
+  fmt.Println("Received user info " + username )
+
+  password, _ := bufio.NewReader(conn).ReadString('\n')
+  password = strings.TrimRight(password, "\n")
+  fmt.Println("Received user info " + password)
+
+  uuid, _ := bufio.NewReader(conn).ReadString('\n')
+  uuid = strings.TrimRight(uuid, "\n")
+  fmt.Println("Received user info " + uuid)
+
+  client := Client{username, password, conn, uuid}
+  clients_MAP[uuid] = client
+
+  fmt.Println(client.username + " has logged in")
   for {
     // will listen for message to process ending in newline (\n)
     message, _ := bufio.NewReader(conn).ReadString('\n')
@@ -54,7 +65,9 @@ func handleConnection(conn net.Conn){
     conn.Write([]byte(newmessage + "\n"))
 
     if strings.TrimRight(message, "\n") == "exit" {
+      fmt.Println(client.username + " has disconected")
       conn.Close()
+      fmt.Println("Closing Connection")
       return
     }
   }
