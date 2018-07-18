@@ -1,0 +1,21 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+Client	client.go	/^type Client struct {$/;"	t
+CreateClient	client.go	/^func CreateClient(conn net.Conn) Client{$/;"	f
+CreateCredentials	client.go	/^func CreateCredentials() (string, string){$/;"	f
+Listen	client.go	/^func (client *Client) Listen() {$/;"	f
+Read	client.go	/^func (client *Client) Read() {$/;"	f
+SetupCloseHandlerClient	client.go	/^func SetupCloseHandlerClient(conn net.Conn) {$/;"	f
+SetupCloseHandlerServer	server.go	/^func SetupCloseHandlerServer(ln net.Listener, aconns map[net.Conn] int) {$/;"	f
+Write	client.go	/^func (client *Client) Write() {$/;"	f
+generateUuid	uuidGenerator.go	/^func generateUuid () string{$/;"	f
+main	chatroom.go	/^func main() {$/;"	f
+main	chatroom.go	/^package main$/;"	p
+main	client.go	/^package main$/;"	p
+main	server.go	/^func main() {$/;"	f
+main	server.go	/^package main$/;"	p
+main	uuidGenerator.go	/^package main$/;"	p

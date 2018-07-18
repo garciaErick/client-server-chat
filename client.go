@@ -11,25 +11,24 @@ import (
 )
 
 type Client struct {
+  uuid string 
   username string
-  password string
   incoming chan string
   outgoing chan string
   reader *bufio.Reader
   writer *bufio.Writer
   conn net.Conn
-  // uuid string 
 }
 
 func CreateClient(conn net.Conn) Client{
   writer := bufio.NewWriter(conn)
   reader := bufio.NewReader(conn)
 
-  username, password := CreateCredentials()
+  username, uuid := CreateCredentials()
 
   client := Client{
+    uuid: uuid,
     username: username,
-    password: password,
     reader:   reader,
     writer:   writer,
     incoming: make(chan string),
@@ -49,11 +48,9 @@ func CreateCredentials() (string, string){
   username, _ := reader.ReadString('\n')
   username = strings.TrimRight(username, "\n")
 
-  fmt.Print("Enter your password:")
-  password, _ := reader.ReadString('\n')
-  password = strings.TrimRight(password, "\n")
+  uuid := GenerateUuid()
 
-  return username, password
+  return username, uuid
 }
 
 
@@ -80,7 +77,7 @@ func (client *Client) Write() {
 
 func (client *Client) Listen() {
   fmt.Fprintf(client.conn, client.username + "\n")
-  fmt.Fprintf(client.conn, client.password + "\n")
+  fmt.Fprintf(client.conn, client.uuid + "\n")
   
 
   go client.Read()
