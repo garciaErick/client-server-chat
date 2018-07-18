@@ -9,8 +9,8 @@ import (
 
 func main() {
 
-  // connect to this socket
-  protocol, host, port := "tcp", "localhost" , ":8085"
+  // Using tcp protocol to ensure our messages get delivered
+  protocol, host, port := "tcp", "localhost" , ":8080"
 
 
   fmt.Println("Starting Client connection")
@@ -19,6 +19,7 @@ func main() {
   SetupCloseHandlerClient(conn)
   CreateClient(conn)
 
-  fmt.Println("Connected to server ")
+  fmt.Println("Press Ctrl+c to exit chatroom")
+
 }
 

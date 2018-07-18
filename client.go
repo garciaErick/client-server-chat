@@ -11,13 +11,13 @@ import (
 )
 
 type Client struct {
-  uuid string 
+  uuid     string
   username string
   incoming chan string
   outgoing chan string
-  reader *bufio.Reader
-  writer *bufio.Writer
-  conn net.Conn
+  reader   *bufio.Reader
+  writer   *bufio.Writer
+  conn     net.Conn
 }
 
 func CreateClient(conn net.Conn) Client{
@@ -28,7 +28,7 @@ func CreateClient(conn net.Conn) Client{
   username, uuid := CreateCredentials()
 
   client := Client{
-    uuid: uuid,
+    uuid:     uuid,
     username: username,
     reader:   reader,
     writer:   writer,
@@ -48,8 +48,9 @@ func CreateCredentials() (string, string){
 
   fmt.Print("Enter your username: ")
   username, _ := reader.ReadString('\n')
-  username = strings.TrimRight(username, "\n")
+  username     = strings.TrimRight(username, "\n")
 
+  // Unique token generated each time
   uuid := GenerateUuid()
 
   return username, uuid
@@ -59,10 +60,12 @@ func CreateCredentials() (string, string){
 func (client *Client) Read() {
   for {
     m, err := bufio.NewReader(client.conn).ReadString('\n')
-    m = strings.TrimRight(m, "\n")
+    m       = strings.TrimRight(m, "\n")
+    
+    // If error or if server is shutdown close connection
     if err != nil  || m == "From server: Server is shutting down, closing connections"{
       fmt.Println(m)
-      fmt.Println("Goodbye")
+      fmt.Println("Goodbye!")
       client.conn.Close()
       os.Exit(1)
     }
@@ -74,14 +77,17 @@ func (client *Client) Read() {
 func (client *Client) Write() {
   for {
     fmt.Print(">_ ")
+
     message, _ := bufio.NewReader(os.Stdin).ReadString('\n')
-    message = strings.TrimRight(message, "\n")
+    message     = strings.TrimRight(message, "\n")
+
     fmt.Fprintf(client.conn, message + "\n")
   }
 }
 
 func (client *Client) Listen() {
   client.LogIn()
+
   go client.Read()
   client.Write()
 }
@@ -94,16 +100,18 @@ func (client *Client) LogIn() {
     fmt.Fprintf(client.conn, client.username + "\n")
 
     serverResponse, _ := bufio.NewReader(client.conn).ReadString('\n')
-    serverResponse = strings.TrimRight(serverResponse, "\n")
+    serverResponse     = strings.TrimRight(serverResponse, "\n")
 
     if serverResponse == "Connection stablished with the chat server" {
       fmt.Println(serverResponse)
+      fmt.Println("Press Ctrl+c to exit chatroom")
+
       break
     } else { // Username is not unique try again
       fmt.Print(serverResponse)
-      newUsername, _ := bufio.NewReader(os.Stdin).ReadString('\n')
-      newUsername = strings.TrimRight(newUsername, "\n")
-      client.username = newUsername
+      newUsername, _  := bufio.NewReader(os.Stdin).ReadString('\n')
+      newUsername      = strings.TrimRight(newUsername, "\n")
+      client.username  = newUsername
 
       fmt.Fprintf(client.conn, newUsername + "\n")
     }

@@ -14,7 +14,9 @@ import (
 func main() {
   fmt.Println("Starting server...")
 
-  ln, err := net.Listen("tcp", ":8085")
+  // Using tcp protocol to ensure our messages get delivered
+  protocol, host, port := "tcp", "localhost" , ":8080"
+  ln, err := net.Listen(protocol, host + port) 
 
   activeUsers       := make(map[string] AuthenticatedUser)
   conns             := make(chan net.Conn)
@@ -22,7 +24,8 @@ func main() {
   messages          := make(chan string)
 
   SetupCloseHandlerServer(ln, activeUsers)
-  fmt.Println("Server is ready to receive")
+  fmt.Println("Server started at "  + host + port)
+  fmt.Println("Press Ctrl+c to shutdown server")
 
   if err != nil {
     log.Println(err.Error())
@@ -47,20 +50,29 @@ func main() {
 
       // Validating incoming user
       uuid, _ := rd.ReadString('\n')
-      uuid = strings.TrimRight(uuid, "\n") 
+      uuid     = strings.TrimRight(uuid, "\n")
 
       var username string
 
       // Checking if username is unique 
       for {
         username, _ = rd.ReadString('\n')
-        username = strings.TrimRight(username, "\n")
+        username    = strings.TrimRight(username, "\n")
+
         message := ""
 
         // Prompt the client to use a different username
         if UserExists(username, activeUsers){
           log.Printf("Connection '%v' tried to log in with a duplicate username", uuid)
+          message = ""
           message = "Username taken, try again: "
+          fmt.Fprintf(conn, message + "\n")
+          conn.Write([]byte(message))
+          continue
+        } else if ContainsIllegalCharacters(username){
+          log.Printf("Connection '%v' tried to log in with username containing illegal chars", uuid)
+          message = ""
+          message = "Username contains illegal characters, try again: "
           fmt.Fprintf(conn, message + "\n")
           conn.Write([]byte(message))
           continue
@@ -80,18 +92,18 @@ func main() {
       // Add new user to the Authenticated Users
       activeUsers[uuid] = AuthenticatedUser {
         username: username,
-        uuid: uuid,
-        conn: conn,
+        uuid:     uuid,
+        conn:     conn,
       }
 
       // Read messages from connections authenticated users
       go func(user AuthenticatedUser){
         for {
           // Declaring empty message to clean any leftover buffers
-          message = ""
-
+          message       = ""
           message, err := rd.ReadString('\n')
-          message = strings.TrimRight(message, "\n")
+          message       = strings.TrimRight(message, "\n")
+
           if err != nil {
             break
           }
@@ -109,9 +121,8 @@ func main() {
       // Broadcast incoming message to Authenticated Users
     case message := <- messages:
       for _, user := range activeUsers {
-        var messageToSend string
-
-        fullMessage := strings.Split(message, ":")
+        messageToSend      := ""
+        fullMessage        := strings.Split(message, ":")
         username, contents := fullMessage[0], fullMessage[1]
 
         // Checking if sending message to the original sender
@@ -140,13 +151,17 @@ func main() {
   }
 }
 
-func UserExists(username string, activeUsers map[string]AuthenticatedUser) (exists bool) {
+func UserExists(username string, activeUsers map[string]AuthenticatedUser) (bool) {
   for _, user := range activeUsers{
     if user.username == username {
       return true
     }
   }
   return false
+}
+
+func ContainsIllegalCharacters(username string) (bool) {
+  return strings.Contains(username, ":")
 }
 
 func BroadcastConnection (message string, activeUsers map[string]AuthenticatedUser){
