@@ -30,12 +30,11 @@ running the following in a separate terminal:
 * The server supports multiple clients, and each connection is
 aware of the current user, so messages from server are
 personalized for each client.
-![Demo] (/screenshots/demo.PNG)
-
+![alt text](https://raw.githubusercontent.com/garciaErick/client-server-chat/master/screenshots/demo.PNG "Chatroom Demo")
 
 * Additionally there is some simple validation, no duplicate
 usernames are allowed and no illegal characters are allowed,
 as an example ':' (colon) is an illegal character for a
 username
-![Validation] (/screenshots/validation.PNG)
+![alt text](https://raw.githubusercontent.com/garciaErick/client-server-chat/master/screenshots/validation.PNG "Simple Validation Demo")
 
