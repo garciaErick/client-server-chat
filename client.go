@@ -44,7 +44,7 @@ func CreateClient(conn net.Conn) Client{
 func CreateCredentials() (string, string){
   reader := bufio.NewReader(os.Stdin)
 
-  fmt.Print("Enter your username:")
+  fmt.Print("Enter your username: ")
   username, _ := reader.ReadString('\n')
   username = strings.TrimRight(username, "\n")
 
@@ -76,12 +76,18 @@ func (client *Client) Write() {
 }
 
 func (client *Client) Listen() {
-  fmt.Fprintf(client.conn, client.username + "\n")
-  fmt.Fprintf(client.conn, client.uuid + "\n")
-  
-
+  client.LogIn()
   go client.Read()
   client.Write()
+}
+
+func (client *Client) LogIn() {
+  // for {
+    fmt.Fprintf(client.conn, client.username + "\n")
+    fmt.Fprintf(client.conn, client.uuid + "\n") 
+
+
+  // } 
 }
 
 func SetupCloseHandlerClient(conn net.Conn) {

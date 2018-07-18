@@ -6,9 +6,9 @@ import (
   "net" 
   "log"
   "fmt"
-  "os"
-  "os/signal"
-  "syscall"
+  // "os"
+  // "os/signal"
+  // "syscall"
 )
 
 func main() {
@@ -16,12 +16,12 @@ func main() {
 
   ln, err := net.Listen("tcp", ":8085")
 
-  aconns := make(map[net.Conn]int)
+  activeUsers := make(map[string] AuthenticatedUser)
   conns  := make(chan net.Conn)
-  dconns := make(chan net.Conn)
-  msgs   := make(chan string)
+  disconnectedUsers := make(chan AuthenticatedUser)
+  messages   := make(chan string)
 
-  SetupCloseHandlerServer(ln, aconns)
+  // SetupCloseHandlerServer(ln, activeUsers)
 
   fmt.Println("Server is ready to receive")
 
@@ -45,58 +45,101 @@ func main() {
     select {
       // Read incoming connections
     case conn := <-conns:
-      aconns[conn] = i
-      i++
       rd := bufio.NewReader(conn)
-      username, _ := rd.ReadString('\n')
-      username = strings.TrimRight(username, "\n")
+      var username string
 
-      password, _ := rd.ReadString('\n')
-      password = strings.TrimRight(password, "\n")
+      for {
+        username, _ = rd.ReadString('\n')
+        username = strings.TrimRight(username, "\n")
 
-      fmt.Printf("%v has connected\n", username)
+        if UserExists(username, activeUsers){
+          break
+        }
+      }
+
+      uuid, _ := rd.ReadString('\n')
+      uuid = strings.TrimRight(uuid, "\n") 
+
+      message := username + " has connected\n"
+      BroadcastConnection(message, activeUsers)
+
+      activeUsers[uuid] = AuthenticatedUser {
+        username: username,
+        uuid: uuid,
+        conn: conn,
+      }
 
       //Read messages from connections
-      go func(conn net.Conn, i int){
+      go func(user AuthenticatedUser, i int){
         for {
-          m, err := rd.ReadString('\n')
-          m = strings.TrimRight(m, "\n")
+          message, err := rd.ReadString('\n')
+          message = strings.TrimRight(message, "\n")
           if err != nil {
             break
           }
-          msgs <- fmt.Sprintf("Client %v: %v", i, m)
+          message = user.username + ": " + message
+          messages <- message
         }
-        dconns <- conn
-      } (conn, i)
+        disconnectedUsers <- user
+      } (activeUsers[uuid], i)
 
-    case msg := <- msgs:
+    case message := <- messages:
       // Broadcast
-      for conn := range aconns {
-        // fmt.Println(msg)
-        fmt.Fprintf(conn, msg + "\n")
-        conn.Write([]byte(msg))
+      for _, user := range activeUsers {
+        var messageToSend string
+        fullMessage := strings.Split(message, ":")
+        username, contents := fullMessage[0], fullMessage[1]
+
+        if user.username == username{
+          messageToSend = "(You):" + contents
+        } else {
+          messageToSend = username + ": " + contents
+
+        }
+
+        fmt.Fprintf(user.conn, messageToSend + "\n")
+        user.conn.Write([]byte(messageToSend))
       }
 
-    case dconn := <- dconns:
-      log.Printf("Client %v is gone\n", aconns[dconn] + 1)
-      delete(aconns, dconn)
+    case disconnectedUser := <- disconnectedUsers:
+      message := "User " + disconnectedUser.username + " has closed the chat"
+      delete(activeUsers, disconnectedUser.uuid)
+
+      BroadcastConnection(message, activeUsers)
     }
   }
 }
 
-
-func SetupCloseHandlerServer(ln net.Listener, aconns map[net.Conn] int) {
-  c := make(chan os.Signal, 2)
-  signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-  go func() {
-    <-c
-    for conn := range aconns{
-      conn.Close()
-      // fmt.Println(k)
+func UserExists(username string, activeUsers map[string]AuthenticatedUser) (exists bool) {
+  for _, user := range activeUsers{
+    if user.username == username {
+      return false
     }
-    fmt.Println("\r- Ctrl+C pressed in Terminal")
-    fmt.Println("\r- Closing listener and exiting program")
-    ln.Close()
-    os.Exit(0)
-  }()
+  }
+  return true
 }
+
+func BroadcastConnection (message string, activeUsers map[string]AuthenticatedUser){
+  log.Printf(message)
+  for _, user := range activeUsers {
+    fmt.Fprintf(user.conn, message + "\n")
+    user.conn.Write([]byte(message))
+  }
+}
+
+
+// func SetupCloseHandlerServer(ln net.Listener, activeUsers map[string] AuthenticatedUser ) {
+//   c := make(chan os.Signal, 2)
+//   signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+//   go func() {
+//     <-c
+//     // for conn := range activeUsers{
+//     //   conn.Close()
+//       // fmt.Println(k)
+//     }
+//     fmt.Println("\r- Ctrl+C pressed in Terminal")
+//     fmt.Println("\r- Closing listener and exiting program")
+//     ln.Close()
+//     os.Exit(0)
+//   }()
+// }
